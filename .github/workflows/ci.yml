@@ -1,0 +1,37 @@
+name: ci
+
+on: [push, pull_request]
+
+jobs:
+  test:
+    name: python ${{ matrix.python-version }}
+    runs-on: ubuntu-latest
+    strategy:
+      # Report every version that breaks, not just the first one.
+      fail-fast: false
+      matrix:
+        python-version: ["3.10", "3.11", "3.12", "3.13"]
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+          cache: pip
+          cache-dependency-path: pyproject.toml
+
+      - name: Install deps
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e ".[dev]"
+
+      - name: Lint
+        run: |
+          ruff format --check .
+          ruff check .
+
+      - name: Type check
+        run: mypy src/mizan tests
+
+      - name: Test
+        run: pytest --cov=mizan --cov-report=term-missing --cov-fail-under=85
