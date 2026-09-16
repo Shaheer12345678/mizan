@@ -49,8 +49,14 @@ def seeded(conn: sqlite3.Connection) -> sqlite3.Connection:
 
 @pytest.fixture
 def cli(db_path: Path) -> Invoke:
-    """Invoke the real Typer app against the temporary database."""
-    runner = CliRunner(env={db.DB_PATH_ENV_VAR: str(db_path)})
+    """Invoke the real Typer app against the temporary database.
+
+    COLUMNS is pinned wide because Rich wraps to the terminal width, and a long
+    tmp_path can otherwise split a message across lines mid-sentence. That is correct
+    behaviour in a real terminal but it makes assertions depend on how deep the
+    temporary directory happens to be.
+    """
+    runner = CliRunner(env={db.DB_PATH_ENV_VAR: str(db_path), "COLUMNS": "200"})
 
     def invoke(*args: str) -> Result:
         return runner.invoke(app, list(args))

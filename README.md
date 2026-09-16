@@ -122,8 +122,15 @@ instead of rounding them, because silently rounding is the exact failure the des
 meant to prevent.
 
 The proof is a test, not a claim: `test_sum_of_1000_one_cent_amounts_is_exactly_ten_dollars`
-sums a thousand parses of `"0.01"` and asserts exactly `1000` cents. Its neighbour does
-the same sum in floats and asserts the result is not `10.00`.
+sums a thousand parses of `"0.01"` and asserts exactly `1000` cents. Its neighbour runs
+the same total through a float, accumulating with `+=` the way a running balance
+actually grows, and asserts the result is not `10.00`. It comes out at
+`9.999999999999831`.
+
+That second test accumulates rather than calling `sum()` on purpose. Since Python 3.12
+the builtin `sum()` applies compensated summation to floats, which would paper over the
+drift on newer interpreters and leave the test passing for the wrong reason on older
+ones. CI across 3.10 to 3.13 is what surfaced that.
 
 ### Business logic knows nothing about the CLI
 
@@ -187,8 +194,8 @@ and a coverage floor of 85 percent.
 
 ## Results
 
-- A thousand transactions of one cent sum to exactly `$10.00`. The same sum in floats
-  does not.
+- A thousand transactions of one cent total exactly `$10.00`. The same total
+  accumulated in a float reaches `9.999999999999831`.
 - The full suite runs in about 3 seconds, because most of it never touches the CLI.
 - Zero `ruff` and `mypy` findings under `strict = true` across 4 Python versions.
 

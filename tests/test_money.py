@@ -19,9 +19,17 @@ def test_sum_of_1000_one_cent_amounts_is_exactly_ten_dollars() -> None:
     assert format_money(total) == "$10.00"
 
 
-def test_the_same_sum_as_float_does_not_reach_ten_dollars() -> None:
-    """The failure being avoided, pinned down so the reasoning is not just a claim."""
-    naive = sum(0.01 for _ in range(1000))
+def test_the_same_total_accumulated_as_float_does_not_reach_ten_dollars() -> None:
+    """The failure being avoided, pinned down so the reasoning is not just a claim.
+
+    This accumulates with ``+=`` rather than calling ``sum()``, for two reasons. It is
+    how a ledger actually adds a transaction to a running total, and since Python 3.12
+    the builtin ``sum()`` applies compensated summation to floats, which would hide the
+    very drift this test exists to demonstrate.
+    """
+    naive = 0.0
+    for _ in range(1000):
+        naive += 0.01
 
     assert naive != 10.00
     assert abs(naive - 10.00) > 0
